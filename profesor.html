@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablero Profesor — Prompt Tagger</title>
+<style>
+  :root {
+    --blue-50: #E6F1FB; --blue-200: #85B7EB; --blue-600: #185FA5; --blue-800: #0C447C;
+    --green-50: #E1F5EE; --green-200: #5DCAA5; --green-600: #0F6E56; --green-800: #085041;
+    --amber-50: #FAEEDA; --amber-200: #EF9F27; --amber-600: #854F0B; --amber-800: #633806;
+    --gray-50: #F1EFE8; --gray-100: #D3D1C7; --gray-200: #B4B2A9; --gray-400: #888780; --gray-800: #2C2C2A;
+    --purple-50: #EEEDFE; --purple-600: #534AB7;
+    --red-50: #FCEBEB; --red-600: #A32D2D;
+    --bg: #F7F6F2; --card: #FFFFFF; --text: #1a1a18; --muted: #6b6b67; --border: rgba(0,0,0,0.09);
+    --radius: 10px; --radius-lg: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .header {
+    background: var(--text); color: white;
+    padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header h1 { font-size: 16px; font-weight: 600; }
+  .header p { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+  .live-label { font-size: 12px; opacity: 0.8; display: flex; align-items: center; gap: 6px; }
+
+  .main { max-width: 1100px; margin: 0 auto; padding: 1.75rem 1.5rem; }
+
+  /* STAT CARDS */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+  .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.4rem; }
+  .stat-num { font-size: 32px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* SCORE DISTRIBUTION */
+  .section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.85rem; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 1.5rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+
+  /* BAR CHART */
+  .bar-group { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { font-size: 12px; color: var(--muted); width: 72px; flex-shrink: 0; text-align: right; }
+  .bar-track { flex: 1; height: 22px; background: var(--gray-50); border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease; display: flex; align-items: center; padding-left: 8px; }
+  .bar-fill span { font-size: 11px; font-weight: 600; color: white; }
+  .bar-count { font-size: 12px; color: var(--muted); width: 28px; text-align: left; }
+
+  /* PER PROMPT */
+  .prompt-bars { display: flex; flex-direction: column; gap: 10px; }
+  .pb-row { display: flex; align-items: center; gap: 10px; }
+  .pb-label { font-size: 12px; color: var(--muted); width: 60px; flex-shrink: 0; }
+  .pb-track { flex: 1; height: 18px; background: var(--gray-50); border-radius: 6px; overflow: hidden; }
+  .pb-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease; }
+  .pb-pct { font-size: 12px; font-weight: 600; width: 40px; text-align: right; }
+
+  /* TAG ACCURACY */
+  .tag-accuracy { display: flex; flex-direction: column; gap: 10px; }
+  .ta-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .ta-pill { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; width: 120px; }
+  .ta-pill.accion { background: var(--blue-50); color: var(--blue-800); }
+  .ta-pill.contexto { background: var(--green-50); color: var(--green-800); }
+  .ta-pill.modificador { background: var(--amber-50); color: var(--amber-800); }
+  .ta-bar-track { flex: 1; height: 14px; background: var(--gray-50); border-radius: 99px; overflow: hidden; }
+  .ta-bar-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+  .ta-bar-fill.accion { background: var(--blue-200); }
+  .ta-bar-fill.contexto { background: var(--green-200); }
+  .ta-bar-fill.modificador { background: var(--amber-200); }
+  .ta-pct { font-size: 12px; font-weight: 700; width: 38px; text-align: right; }
+
+  /* STUDENTS TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { text-align: left; padding: 0.5rem 0.75rem; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  tbody td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--gray-50); }
+  .score-badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+  .score-badge.high { background: var(--green-50); color: var(--green-800); }
+  .score-badge.mid { background: var(--amber-50); color: var(--amber-800); }
+  .score-badge.low { background: var(--red-50); color: var(--red-600); }
+  .dots-row { display: flex; gap: 3px; }
+  .prompt-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .dot-ok { background: var(--green-200); }
+  .dot-partial { background: var(--amber-200); }
+  .dot-fail { background: var(--gray-100); }
+
+  /* EMPTY */
+  .empty-state { text-align: center; padding: 3rem 1.5rem; color: var(--muted); }
+  .empty-state .e-icon { font-size: 40px; margin-bottom: 0.75rem; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  /* BUTTONS */
+  .btn-sm { padding: 0.5rem 1rem; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: var(--radius); font-size: 13px; color: white; cursor: pointer; transition: background 0.15s; }
+  .btn-sm:hover { background: rgba(255,255,255,0.25); }
+  .btn-sm.danger { background: transparent; border-color: rgba(255,255,255,0.3); }
+
+  .refresh-label { font-size: 11px; color: var(--muted); text-align: right; margin-bottom: 0.5rem; }
+
+  @media(max-width: 640px) {
+    .two-col { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .header { padding: 0.75rem 1rem; }
+    .main { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div>
+      <h1>Tablero del Profesor — Prompt Tagger</h1>
+      <p>Vista en tiempo real de los resultados de la clase</p>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span class="live-label"><span class="live-dot"></span> En vivo</span>
+    <button class="btn-sm" onclick="clearData()">Reiniciar sesión</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="refresh-label" id="last-refresh">Actualizando cada 5s...</div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Completaron</div>
+      <div class="stat-num" id="s-completed">0</div>
+      <div class="stat-sub">de 40 estudiantes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Promedio clase</div>
+      <div class="stat-num" id="s-avg">—</div>
+      <div class="stat-sub">porcentaje correcto</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Nota más alta</div>
+      <div class="stat-num" id="s-top">—</div>
+      <div class="stat-sub" id="s-top-name">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Necesitan apoyo</div>
+      <div class="stat-num" id="s-low" style="color:#A32D2D">0</div>
+      <div class="stat-sub">bajo 60%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tiempo promedio</div>
+      <div class="stat-num" id="s-time">—</div>
+      <div class="stat-sub">minutos</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+
+    <!-- SCORE DISTRIBUTION -->
+    <div class="card">
+      <div class="section-title">Distribución de puntajes</div>
+      <div class="bar-group" id="dist-chart">
+        <div class="bar-row">
+          <span class="bar-label">90–100%</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-90" style="width:0%;background:var(--green-600)"><span id="bn-90"></span></div></div>
+          <span class="bar-count" id="bc-90">0</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">70–89%</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-70" style="width:0%;background:var(--green-200)"><span id="bn-70"></span></div></div>
+          <span class="bar-count" id="bc-70">0</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">50–69%</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-50" style="width:0%;background:var(--amber-200)"><span id="bn-50"></span></div></div>
+          <span class="bar-count" id="bc-50">0</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">0–49%</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-0" style="width:0%;background:#F09595"><span id="bn-0"></span></div></div>
+          <span class="bar-count" id="bc-0">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAG ACCURACY -->
+    <div class="card">
+      <div class="section-title">Precisión por tipo de etiqueta</div>
+      <div class="tag-accuracy" id="tag-acc">
+        <div class="ta-row">
+          <span class="ta-pill accion">Acción</span>
+          <div class="ta-bar-track"><div class="ta-bar-fill accion" id="ta-accion" style="width:0%"></div></div>
+          <span class="ta-pct" id="tp-accion">—</span>
+        </div>
+        <div class="ta-row">
+          <span class="ta-pill contexto">Contexto</span>
+          <div class="ta-bar-track"><div class="ta-bar-fill contexto" id="ta-contexto" style="width:0%"></div></div>
+          <span class="ta-pct" id="tp-contexto">—</span>
+        </div>
+        <div class="ta-row">
+          <span class="ta-pill modificador">Modificador</span>
+          <div class="ta-bar-track"><div class="ta-bar-fill modificador" id="ta-modificador" style="width:0%"></div></div>
+          <span class="ta-pct" id="tp-modificador">—</span>
+        </div>
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+          <div class="section-title" style="margin-bottom:0.65rem">Aciertos por prompt</div>
+          <div class="prompt-bars" id="prompt-bars">
+            <div class="pb-row"><span class="pb-label">Prompt 1</span><div class="pb-track"><div class="pb-fill" id="pb-1" style="width:0%;background:var(--blue-200)"></div></div><span class="pb-pct" id="pp-1">—</span></div>
+            <div class="pb-row"><span class="pb-label">Prompt 2</span><div class="pb-track"><div class="pb-fill" id="pb-2" style="width:0%;background:var(--blue-200)"></div></div><span class="pb-pct" id="pp-2">—</span></div>
+            <div class="pb-row"><span class="pb-label">Prompt 3</span><div class="pb-track"><div class="pb-fill" id="pb-3" style="width:0%;background:var(--blue-200)"></div></div><span class="pb-pct" id="pp-3">—</span></div>
+            <div class="pb-row"><span class="pb-label">Prompt 4</span><div class="pb-track"><div class="pb-fill" id="pb-4" style="width:0%;background:var(--blue-200)"></div></div><span class="pb-pct" id="pp-4">—</span></div>
+            <div class="pb-row"><span class="pb-label">Prompt 5</span><div class="pb-track"><div class="pb-fill" id="pb-5" style="width:0%;background:var(--blue-200)"></div></div><span class="pb-pct" id="pp-5">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- STUDENTS TABLE -->
+  <div class="card" id="students-section">
+    <div class="section-title">Resultados individuales</div>
+    <div id="students-wrap">
+      <div class="empty-state" id="empty-state">
+        <div class="e-icon">⏳</div>
+        <p>Esperando que los estudiantes completen el ejercicio...<br>Cuando terminen aparecerán aquí.</p>
+      </div>
+      <div class="table-wrap" id="table-wrap" style="display:none">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Estudiante</th>
+              <th>Puntaje</th>
+              <th>Correctas</th>
+              <th>Tiempo</th>
+              <th>Por prompt</th>
+            </tr>
+          </thead>
+          <tbody id="students-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'prompt_tagger_results';
+let lastCount = 0;
+
+const EXERCISES = [
+  { tokens: [
+    {tag:'contexto'},{tag:'accion'},{tag:'contexto'},{tag:'contexto'},{tag:'modificador'},{tag:'modificador'}
+  ]},
+  { tokens: [
+    {tag:'contexto'},{tag:'accion'},{tag:'contexto'},{tag:'contexto'},{tag:'modificador'},{tag:'modificador'}
+  ]},
+  { tokens: [
+    {tag:'contexto'},{tag:'accion'},{tag:'contexto'},{tag:'contexto'},{tag:'modificador'},{tag:'modificador'}
+  ]},
+  { tokens: [
+    {tag:'contexto'},{tag:'accion'},{tag:'contexto'},{tag:'contexto'},{tag:'modificador'},{tag:'modificador'}
+  ]},
+  { tokens: [
+    {tag:'contexto'},{tag:'accion'},{tag:'contexto'},{tag:'modificador'},{tag:'modificador'}
+  ]}
+];
+
+function getData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function clearData() {
+  if (confirm('¿Reiniciar todos los resultados de la sesión?')) {
+    localStorage.removeItem(STORAGE_KEY);
+    render([]);
+  }
+}
+
+function render(data) {
+  const n = data.length;
+  document.getElementById('s-completed').textContent = n;
+
+  if (n === 0) {
+    document.getElementById('s-avg').textContent = '—';
+    document.getElementById('s-top').textContent = '—';
+    document.getElementById('s-top-name').textContent = '—';
+    document.getElementById('s-low').textContent = '0';
+    document.getElementById('s-time').textContent = '—';
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('table-wrap').style.display = 'none';
+    resetBars();
+    return;
+  }
+
+  const avg = Math.round(data.reduce((a, b) => a + b.pct, 0) / n);
+  const top = data.reduce((a, b) => a.pct > b.pct ? a : b);
+  const low = data.filter(d => d.pct < 60).length;
+  const avgTime = Math.round(data.filter(d => d.mins > 0).reduce((a, b) => a + b.mins, 0) / n) || '<1';
+
+  document.getElementById('s-avg').textContent = avg + '%';
+  document.getElementById('s-top').textContent = top.pct + '%';
+  document.getElementById('s-top-name').textContent = top.name;
+  document.getElementById('s-low').textContent = low;
+  document.getElementById('s-time').textContent = avgTime;
+
+  // Distribution
+  const maxBar = n;
+  const buckets = [0, 0, 0, 0];
+  data.forEach(d => {
+    if (d.pct >= 90) buckets[0]++;
+    else if (d.pct >= 70) buckets[1]++;
+    else if (d.pct >= 50) buckets[2]++;
+    else buckets[3]++;
+  });
+  const labels = ['90', '70', '50', '0'];
+  buckets.forEach((count, i) => {
+    const pct = maxBar > 0 ? (count / maxBar) * 100 : 0;
+    const el = document.getElementById(`bar-${labels[i]}`);
+    const cn = document.getElementById(`bc-${labels[i]}`);
+    if (el) { el.style.width = pct + '%'; }
+    if (cn) cn.textContent = count;
+  });
+
+  // Tag accuracy
+  const tagCounts = { accion: { correct: 0, total: 0 }, contexto: { correct: 0, total: 0 }, modificador: { correct: 0, total: 0 } };
+  const promptCounts = [0,0,0,0,0].map(() => ({ correct: 0, total: 0 }));
+
+  data.forEach(student => {
+    if (!student.scores) return;
+    student.scores.forEach(sc => {
+      const ex = EXERCISES[sc.exIdx];
+      if (!ex) return;
+      promptCounts[sc.exIdx].total += sc.total;
+      promptCounts[sc.exIdx].correct += sc.correct;
+      ex.tokens.forEach((tok, i) => {
+        tagCounts[tok.tag].total++;
+      });
+    });
+  });
+
+  ['accion','contexto','modificador'].forEach(tag => {
+    const tc = tagCounts[tag];
+    if (tc.total === 0) return;
+    const pct = Math.round((tc.correct / tc.total) * 100) || 0;
+    document.getElementById(`ta-${tag}`).style.width = pct + '%';
+    document.getElementById(`tp-${tag}`).textContent = pct + '%';
+  });
+
+  promptCounts.forEach((pc, i) => {
+    const pct = pc.total > 0 ? Math.round((pc.correct / pc.total) * 100) : 0;
+    const el = document.getElementById(`pb-${i + 1}`);
+    const pp = document.getElementById(`pp-${i + 1}`);
+    if (el) el.style.width = (data.filter(d => d.scores && d.scores[i]).length > 0 ? pct : 0) + '%';
+    if (pp) pp.textContent = data.some(d => d.scores && d.scores[i]) ? pct + '%' : '—';
+  });
+
+  // Table
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('table-wrap').style.display = 'block';
+
+  const sorted = [...data].sort((a, b) => b.pct - a.pct);
+  const tbody = document.getElementById('students-tbody');
+  tbody.innerHTML = '';
+  sorted.forEach((s, idx) => {
+    const badgeClass = s.pct >= 80 ? 'high' : s.pct >= 60 ? 'mid' : 'low';
+    const dots = (s.scores || []).map(sc => {
+      const p = Math.round((sc.correct / sc.total) * 100);
+      const cls = p >= 80 ? 'dot-ok' : p >= 50 ? 'dot-partial' : 'dot-fail';
+      return `<div class="prompt-dot ${cls}" title="Prompt ${sc.exIdx+1}: ${p}%"></div>`;
+    }).join('');
+
+    tbody.innerHTML += `
+      <tr>
+        <td style="color:var(--muted);font-size:12px">${idx + 1}</td>
+        <td style="font-weight:500">${escHtml(s.name)}</td>
+        <td><span class="score-badge ${badgeClass}">${s.pct}%</span></td>
+        <td style="color:var(--muted)">${s.correct}/${s.total}</td>
+        <td style="color:var(--muted)">${s.mins || '<1'} min</td>
+        <td><div class="dots-row">${dots}</div></td>
+      </tr>`;
+  });
+
+  document.getElementById('last-refresh').textContent = 'Última actualización: ' + new Date().toLocaleTimeString('es');
+}
+
+function resetBars() {
+  ['90','70','50','0'].forEach(l => {
+    const b = document.getElementById(`bar-${l}`);
+    if (b) b.style.width = '0%';
+    const c = document.getElementById(`bc-${l}`);
+    if (c) c.textContent = '0';
+  });
+  ['accion','contexto','modificador'].forEach(t => {
+    const el = document.getElementById(`ta-${t}`);
+    if (el) el.style.width = '0%';
+    const ep = document.getElementById(`tp-${t}`);
+    if (ep) ep.textContent = '—';
+  });
+  [1,2,3,4,5].forEach(i => {
+    const el = document.getElementById(`pb-${i}`);
+    if (el) el.style.width = '0%';
+    const pp = document.getElementById(`pp-${i}`);
+    if (pp) pp.textContent = '—';
+  });
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function poll() {
+  const data = getData();
+  render(data);
+}
+
+poll();
+setInterval(poll, 5000);
+
+// BroadcastChannel for same-origin real-time
+try {
+  const bc = new BroadcastChannel('prompt_tagger');
+  bc.onmessage = (e) => {
+    if (e.data.type === 'result') {
+      const existing = getData();
+      const idx = existing.findIndex(r => r.name === e.data.name);
+      if (idx >= 0) existing[idx] = e.data;
+      else existing.push(e.data);
+      localStorage.setItem('prompt_tagger_results', JSON.stringify(existing));
+      render(existing);
+    }
+  };
+} catch(e) {}
+</script>
+</body>
+</html>

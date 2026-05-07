@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tagger de Prompts — Estudiante</title>
+<style>
+  :root {
+    --blue-50: #E6F1FB; --blue-200: #85B7EB; --blue-600: #185FA5; --blue-800: #0C447C;
+    --green-50: #E1F5EE; --green-200: #5DCAA5; --green-600: #0F6E56; --green-800: #085041;
+    --amber-50: #FAEEDA; --amber-200: #EF9F27; --amber-600: #854F0B; --amber-800: #633806;
+    --gray-50: #F1EFE8; --gray-100: #D3D1C7; --gray-400: #888780; --gray-800: #2C2C2A;
+    --purple-50: #EEEDFE; --purple-600: #534AB7;
+    --coral-50: #FAECE7; --coral-600: #993C1D;
+    --bg: #F7F6F2;
+    --card: #FFFFFF;
+    --text: #1a1a18;
+    --muted: #6b6b67;
+    --border: rgba(0,0,0,0.1);
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 4rem;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 32px; height: 32px; background: var(--text); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo svg { width: 18px; height: 18px; fill: white; }
+  .header h1 { font-size: 15px; font-weight: 600; }
+  .header p { font-size: 12px; color: var(--muted); }
+  .progress-wrap { display: flex; align-items: center; gap: 10px; }
+  .progress-bar { width: 120px; height: 6px; background: var(--gray-100); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--text); border-radius: 99px; transition: width 0.4s ease; }
+  .progress-label { font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+
+  /* MAIN */
+  .main { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 0; }
+
+  /* NAME SCREEN */
+  .name-screen {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 70vh; text-align: center;
+    gap: 1.5rem;
+  }
+  .name-screen .big-icon {
+    width: 72px; height: 72px; background: var(--text); border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .name-screen .big-icon svg { width: 36px; height: 36px; fill: white; }
+  .name-screen h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .name-screen p { font-size: 15px; color: var(--muted); max-width: 380px; line-height: 1.6; }
+  .name-input-wrap { display: flex; gap: 10px; width: 100%; max-width: 380px; }
+  .name-input {
+    flex: 1; padding: 0.75rem 1rem; border: 1.5px solid var(--border);
+    border-radius: var(--radius); font-size: 15px; background: var(--card);
+    outline: none; transition: border-color 0.2s;
+  }
+  .name-input:focus { border-color: var(--text); }
+  .btn-primary {
+    padding: 0.75rem 1.5rem; background: var(--text); color: white;
+    border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s; white-space: nowrap;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:active { transform: scale(0.97); }
+
+  /* EXERCISE */
+  .ex-header { margin-bottom: 1.5rem; }
+  .ex-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 0.5rem; }
+  .ex-badge {
+    font-size: 11px; font-weight: 600; padding: 3px 10px;
+    border-radius: 99px; background: var(--gray-50); color: var(--muted);
+  }
+  .ex-title { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  .ex-subtitle { font-size: 14px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+  /* TAG TOOLBAR */
+  .toolbar {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .toolbar-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.65rem; }
+  .tags-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tag-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 99px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 2px solid transparent; transition: all 0.15s;
+    user-select: none;
+  }
+  .tag-btn .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .tag-btn.accion { background: var(--blue-50); color: var(--blue-800); }
+  .tag-btn.accion .dot { background: var(--blue-600); }
+  .tag-btn.contexto { background: var(--green-50); color: var(--green-800); }
+  .tag-btn.contexto .dot { background: var(--green-600); }
+  .tag-btn.modificador { background: var(--amber-50); color: var(--amber-800); }
+  .tag-btn.modificador .dot { background: var(--amber-200); }
+  .tag-btn.active-tag { border-color: currentColor; box-shadow: 0 0 0 3px rgba(0,0,0,0.08); }
+  .tag-btn.erase { background: var(--gray-50); color: var(--muted); }
+  .tag-btn.erase .dot { background: var(--gray-400); }
+
+  .tag-legend { margin-top: 0.75rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+  .legend-item { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* PROMPT CARD */
+  .prompt-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.5rem 1.5rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .prompt-card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.85rem; }
+  .prompt-text {
+    font-size: 17px; line-height: 2; color: var(--text);
+    font-style: italic; letter-spacing: 0.01em;
+  }
+  .word-wrap { display: inline; }
+
+  .word {
+    display: inline;
+    padding: 2px 0;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.1s;
+    white-space: pre-wrap;
+  }
+  .word:hover { background: var(--gray-100); }
+
+  .word.tagged-accion { background: var(--blue-50); color: var(--blue-800); border-radius: 2px; }
+  .word.tagged-contexto { background: var(--green-50); color: var(--green-800); border-radius: 2px; }
+  .word.tagged-modificador { background: var(--amber-50); color: var(--amber-800); border-radius: 2px; }
+
+  /* HINT */
+  .hint-bar {
+    background: var(--gray-50); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0.6rem 1rem;
+    font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px;
+    margin-bottom: 1.25rem;
+  }
+
+  /* ACTION ROW */
+  .action-row { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-secondary {
+    padding: 0.65rem 1.25rem; background: transparent;
+    border: 1.5px solid var(--border); border-radius: var(--radius);
+    font-size: 14px; font-weight: 500; cursor: pointer; color: var(--text);
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover { background: var(--gray-50); }
+  .btn-check {
+    padding: 0.65rem 1.5rem; background: var(--text); color: white;
+    border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn-check:hover { opacity: 0.85; }
+
+  /* FEEDBACK */
+  .feedback-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; padding: 1.5rem;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .feedback-overlay.show { opacity: 1; pointer-events: all; }
+  .feedback-modal {
+    background: var(--card); border-radius: var(--radius-lg);
+    padding: 2rem; max-width: 560px; width: 100%;
+    transform: translateY(20px); transition: transform 0.25s;
+  }
+  .feedback-overlay.show .feedback-modal { transform: translateY(0); }
+  .fb-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; }
+  .fb-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .fb-icon.ok { background: var(--green-50); }
+  .fb-icon.partial { background: var(--amber-50); }
+  .fb-title { font-size: 18px; font-weight: 700; }
+  .fb-score { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .fb-section { margin-bottom: 1rem; }
+  .fb-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.5rem; }
+  .fb-prompt { font-size: 15px; line-height: 2.1; font-style: italic; }
+  .fb-tag {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 1px 7px; border-radius: 99px; vertical-align: middle;
+    margin: 0 1px;
+  }
+  .fb-tag.accion { background: var(--blue-50); color: var(--blue-800); }
+  .fb-tag.contexto { background: var(--green-50); color: var(--green-800); }
+  .fb-tag.modificador { background: var(--amber-50); color: var(--amber-800); }
+  .fb-miss { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .fb-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 1.5rem; }
+
+  /* COMPLETION */
+  .completion {
+    text-align: center; padding: 4rem 1.5rem; display: flex;
+    flex-direction: column; align-items: center; gap: 1.25rem;
+  }
+  .completion .big-num {
+    font-size: 64px; font-weight: 800; letter-spacing: -3px; line-height: 1;
+  }
+  .completion h2 { font-size: 24px; font-weight: 700; }
+  .completion p { font-size: 15px; color: var(--muted); max-width: 340px; line-height: 1.6; }
+  .score-breakdown {
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+    margin-top: 0.5rem;
+  }
+  .score-item {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0.75rem 1.25rem; text-align: center;
+    min-width: 100px;
+  }
+  .score-item .si-num { font-size: 22px; font-weight: 700; }
+  .score-item .si-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 480px) {
+    .header { padding: 0.75rem 1rem; }
+    .main { padding: 1.25rem 1rem 0; }
+    .prompt-text { font-size: 15px; }
+    .progress-bar { width: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    </div>
+    <div>
+      <h1>Tagger de Prompts</h1>
+      <p id="student-name-display">Identifícate para comenzar</p>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+    <span class="progress-label" id="prog-label">0 / 5</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- NAME SCREEN -->
+  <div class="name-screen" id="name-screen">
+    <div class="big-icon">
+      <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    </div>
+    <h2>Ejercicio: Anatomía del Prompt</h2>
+    <p>Vas a leer 5 prompts reales y deberás identificar sus partes: Acción, Contexto y Modificadores.</p>
+    <div class="name-input-wrap">
+      <input class="name-input" id="name-input" type="text" placeholder="Tu nombre completo..." autocomplete="off" />
+      <button class="btn-primary" onclick="startExercise()">Comenzar →</button>
+    </div>
+  </div>
+
+  <!-- EXERCISE SCREEN -->
+  <div id="exercise-screen" style="display:none">
+    <div class="ex-header">
+      <div class="ex-meta">
+        <span class="ex-badge" id="ex-num">Prompt 1 de 5</span>
+      </div>
+      <h2 class="ex-title">Identifica las partes del prompt</h2>
+      <p class="ex-subtitle">Selecciona una etiqueta y luego haz clic en las palabras del prompt para marcarlas.</p>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-label">Elige una etiqueta</div>
+      <div class="tags-row">
+        <button class="tag-btn accion" onclick="selectTag('accion', this)">
+          <span class="dot"></span> Acción
+        </button>
+        <button class="tag-btn contexto" onclick="selectTag('contexto', this)">
+          <span class="dot"></span> Contexto
+        </button>
+        <button class="tag-btn modificador" onclick="selectTag('modificador', this)">
+          <span class="dot"></span> Modificador
+        </button>
+        <button class="tag-btn erase" onclick="selectTag('erase', this)">
+          <span class="dot"></span> Borrar
+        </button>
+      </div>
+      <div class="tag-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--blue-600)"></span>Acción: qué hace la IA</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--green-600)"></span>Contexto: rol, audiencia, situación</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--amber-200)"></span>Modificador: formato, tono, extensión</span>
+      </div>
+    </div>
+
+    <div class="prompt-card">
+      <div class="prompt-card-label">Prompt</div>
+      <div class="prompt-text" id="prompt-display"></div>
+    </div>
+
+    <div class="hint-bar">
+      <span>💡</span>
+      <span id="hint-text">Selecciona una etiqueta arriba y luego toca las palabras del prompt.</span>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-secondary" onclick="clearAll()">Limpiar</button>
+      <button class="btn-check" onclick="checkAnswer()">Verificar →</button>
+    </div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div id="completion-screen" style="display:none" class="completion">
+    <div class="big-num" id="final-pct">—</div>
+    <h2>¡Ejercicio completado!</h2>
+    <p id="final-msg">Gracias por participar. Tus resultados han sido enviados al tablero del profesor.</p>
+    <div class="score-breakdown">
+      <div class="score-item">
+        <div class="si-num" id="final-correct">—</div>
+        <div class="si-label">Correctas</div>
+      </div>
+      <div class="score-item">
+        <div class="si-num" id="final-total">5</div>
+        <div class="si-label">Total</div>
+      </div>
+      <div class="score-item">
+        <div class="si-num" id="final-time">—</div>
+        <div class="si-label">Minutos</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="location.reload()" style="margin-top:1rem">Reintentar</button>
+  </div>
+
+</div>
+
+<!-- FEEDBACK MODAL -->
+<div class="feedback-overlay" id="feedback-overlay">
+  <div class="feedback-modal">
+    <div class="fb-header">
+      <div class="fb-icon" id="fb-icon">✓</div>
+      <div>
+        <div class="fb-title" id="fb-title">Revisión del prompt</div>
+        <div class="fb-score" id="fb-score"></div>
+      </div>
+    </div>
+    <div class="fb-section">
+      <div class="fb-section-title">Respuesta correcta</div>
+      <div class="fb-prompt" id="fb-correct-prompt"></div>
+    </div>
+    <div class="fb-section" id="fb-miss-section" style="display:none">
+      <div class="fb-section-title">Qué tener en cuenta</div>
+      <div class="fb-miss" id="fb-miss-text"></div>
+    </div>
+    <div class="fb-actions">
+      <button class="btn-check" id="fb-next-btn" onclick="nextPrompt()">Siguiente →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'prompt_tagger_results';
+
+const EXERCISES = [
+  {
+    id: 1,
+    prompt: "Eres un chef experto en cocina mediterránea. Explícame paso a paso cómo preparar una paella. Soy principiante y nunca he cocinado arroz. La explicación es para adultos mayores sin experiencia. Preséntalo en 5 pasos numerados. Usa un tono amigable y sin tecnicismos.",
+    tokens: [
+      { text: "Eres un chef experto en cocina mediterránea.", tag: "contexto" },
+      { text: " Explícame paso a paso cómo preparar una paella.", tag: "accion" },
+      { text: " Soy principiante y nunca he cocinado arroz.", tag: "contexto" },
+      { text: " La explicación es para adultos mayores sin experiencia.", tag: "contexto" },
+      { text: " Preséntalo en 5 pasos numerados.", tag: "modificador" },
+      { text: " Usa un tono amigable y sin tecnicismos.", tag: "modificador" }
+    ],
+    hint: "Este prompt tiene un rol claro al inicio. ¿Quién 'es' la IA?"
+  },
+  {
+    id: 2,
+    prompt: "Eres un médico paciente y empático. Explícame qué es la diabetes tipo 2 y cómo afecta al cuerpo. Me acaban de diagnosticar y estoy asustado, no tengo conocimientos médicos. La explicación es para una persona de 55 años. Dámela en 4 párrafos cortos. Usa un tono tranquilizador, sin términos médicos complejos.",
+    tokens: [
+      { text: "Eres un médico paciente y empático.", tag: "contexto" },
+      { text: " Explícame qué es la diabetes tipo 2 y cómo afecta al cuerpo.", tag: "accion" },
+      { text: " Me acaban de diagnosticar y estoy asustado, no tengo conocimientos médicos.", tag: "contexto" },
+      { text: " La explicación es para una persona de 55 años.", tag: "contexto" },
+      { text: " Dámela en 4 párrafos cortos.", tag: "modificador" },
+      { text: " Usa un tono tranquilizador, sin términos médicos complejos.", tag: "modificador" }
+    ],
+    hint: "Hay dos partes de contexto distintas: una habla del rol de la IA y otra de tu situación personal."
+  },
+  {
+    id: 3,
+    prompt: "Eres un consultor de recursos humanos con experiencia. Ayúdame a redactar un correo para pedir un aumento de sueldo. Llevo 3 años en la empresa y nunca he pedido uno. Va dirigido a un gerente formal. Máximo 150 palabras con asunto incluido. Tono profesional pero cercano.",
+    tokens: [
+      { text: "Eres un consultor de recursos humanos con experiencia.", tag: "contexto" },
+      { text: " Ayúdame a redactar un correo para pedir un aumento de sueldo.", tag: "accion" },
+      { text: " Llevo 3 años en la empresa y nunca he pedido uno.", tag: "contexto" },
+      { text: " Va dirigido a un gerente formal.", tag: "contexto" },
+      { text: " Máximo 150 palabras con asunto incluido.", tag: "modificador" },
+      { text: " Tono profesional pero cercano.", tag: "modificador" }
+    ],
+    hint: "La audiencia ('va dirigido a...') también es parte del contexto."
+  },
+  {
+    id: 4,
+    prompt: "Eres un asesor financiero que explica conceptos de forma sencilla. Enséñame cómo empezar a ahorrar e invertir con poco dinero. Gano un salario básico y nunca he ahorrado de forma consciente. El consejo es para alguien de 30 años que empieza desde cero. Dame 5 pasos prácticos en lista numerada. Tono motivador y realista, sin jerga financiera.",
+    tokens: [
+      { text: "Eres un asesor financiero que explica conceptos de forma sencilla.", tag: "contexto" },
+      { text: " Enséñame cómo empezar a ahorrar e invertir con poco dinero.", tag: "accion" },
+      { text: " Gano un salario básico y nunca he ahorrado de forma consciente.", tag: "contexto" },
+      { text: " El consejo es para alguien de 30 años que empieza desde cero.", tag: "contexto" },
+      { text: " Dame 5 pasos prácticos en lista numerada.", tag: "modificador" },
+      { text: " Tono motivador y realista, sin jerga financiera.", tag: "modificador" }
+    ],
+    hint: "Fíjate en el verbo principal de la instrucción: ¿qué le estás pidiendo hacer exactamente a la IA?"
+  },
+  {
+    id: 5,
+    prompt: "Eres un experto en ciberseguridad que sabe explicar temas técnicos a cualquier persona. Enséñame cómo proteger mis cuentas en internet de hackers. Soy una persona mayor que usa el celular para WhatsApp y banco, y me han intentado estafar. Dame 5 consejos prácticos con un ejemplo concreto en cada uno. Tono paciente, sin alarmar, como si me lo explicara un familiar.",
+    tokens: [
+      { text: "Eres un experto en ciberseguridad que sabe explicar temas técnicos a cualquier persona.", tag: "contexto" },
+      { text: " Enséñame cómo proteger mis cuentas en internet de hackers.", tag: "accion" },
+      { text: " Soy una persona mayor que usa el celular para WhatsApp y banco, y me han intentado estafar.", tag: "contexto" },
+      { text: " Dame 5 consejos prácticos con un ejemplo concreto en cada uno.", tag: "modificador" },
+      { text: " Tono paciente, sin alarmar, como si me lo explicara un familiar.", tag: "modificador" }
+    ],
+    hint: "Este prompt no tiene una audiencia separada. La persona que escribe y la audiencia son la misma."
+  }
+];
+
+let studentName = '';
+let currentEx = 0;
+let activeTag = null;
+let tagMap = {};
+let scores = [];
+let startTime = null;
+let exStartTime = null;
+
+function startExercise() {
+  const name = document.getElementById('name-input').value.trim();
+  if (!name) { document.getElementById('name-input').focus(); return; }
+  studentName = name;
+  document.getElementById('student-name-display').textContent = name;
+  document.getElementById('name-screen').style.display = 'none';
+  document.getElementById('exercise-screen').style.display = 'block';
+  startTime = Date.now();
+  loadExercise(0);
+}
+
+function loadExercise(idx) {
+  currentEx = idx;
+  activeTag = null;
+  tagMap = {};
+  exStartTime = Date.now();
+  document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active-tag'));
+
+  const ex = EXERCISES[idx];
+  document.getElementById('ex-num').textContent = `Prompt ${idx + 1} de ${EXERCISES.length}`;
+  document.getElementById('prog-fill').style.width = `${(idx / EXERCISES.length) * 100}%`;
+  document.getElementById('prog-label').textContent = `${idx} / ${EXERCISES.length}`;
+  document.getElementById('hint-text').textContent = ex.hint;
+
+  const display = document.getElementById('prompt-display');
+  display.innerHTML = '';
+
+  ex.tokens.forEach((token, i) => {
+    tagMap[i] = null;
+    const span = document.createElement('span');
+    span.className = 'word';
+    span.dataset.idx = i;
+    span.textContent = token.text;
+    span.onclick = () => applyTag(i, span);
+    display.appendChild(span);
+  });
+}
+
+function selectTag(tag, btn) {
+  activeTag = tag;
+  document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active-tag'));
+  btn.classList.add('active-tag');
+}
+
+function applyTag(idx, span) {
+  if (!activeTag) {
+    document.querySelector('.toolbar').style.animation = 'none';
+    setTimeout(() => document.querySelector('.toolbar').style.animation = '', 10);
+    return;
+  }
+  if (activeTag === 'erase') {
+    tagMap[idx] = null;
+    span.className = 'word';
+  } else {
+    tagMap[idx] = activeTag;
+    span.className = `word tagged-${activeTag}`;
+  }
+}
+
+function clearAll() {
+  const ex = EXERCISES[currentEx];
+  ex.tokens.forEach((_, i) => {
+    tagMap[i] = null;
+    const span = document.querySelector(`[data-idx="${i}"]`);
+    if (span) span.className = 'word';
+  });
+}
+
+function checkAnswer() {
+  const ex = EXERCISES[currentEx];
+  let correct = 0;
+  let total = ex.tokens.length;
+  let misses = [];
+
+  ex.tokens.forEach((token, i) => {
+    if (tagMap[i] === token.tag) {
+      correct++;
+    } else {
+      const tagNames = { accion: 'Acción', contexto: 'Contexto', modificador: 'Modificador' };
+      const userTagName = tagMap[i] ? tagNames[tagMap[i]] : 'sin etiquetar';
+      const correctTagName = tagNames[token.tag];
+      misses.push(`"${token.text.trim()}" → correcto: <strong>${correctTagName}</strong>, marcaste: ${userTagName}`);
+    }
+  });
+
+  const pct = Math.round((correct / total) * 100);
+  scores.push({ exIdx: currentEx, correct, total, pct });
+
+  const overlay = document.getElementById('feedback-overlay');
+  const fbIcon = document.getElementById('fb-icon');
+  const fbTitle = document.getElementById('fb-title');
+  const fbScore = document.getElementById('fb-score');
+  const fbMissSection = document.getElementById('fb-miss-section');
+  const fbMissText = document.getElementById('fb-miss-text');
+  const fbNextBtn = document.getElementById('fb-next-btn');
+
+  fbIcon.className = `fb-icon ${pct >= 80 ? 'ok' : 'partial'}`;
+  fbIcon.textContent = pct === 100 ? '🎯' : pct >= 60 ? '👍' : '📖';
+  fbTitle.textContent = pct === 100 ? '¡Perfecto!' : pct >= 60 ? '¡Bien!' : 'Repasemos';
+  fbScore.textContent = `${correct} de ${total} fragmentos correctos (${pct}%)`;
+
+  const tagColors = { accion: 'accion', contexto: 'contexto', modificador: 'modificador' };
+  const tagLabels = { accion: 'ACCIÓN', contexto: 'CONTEXTO', modificador: 'MODIFICADOR' };
+  let correctHTML = '';
+  ex.tokens.forEach(token => {
+    correctHTML += `${token.text} <span class="fb-tag ${tagColors[token.tag]}">${tagLabels[token.tag]}</span>`;
+  });
+  document.getElementById('fb-correct-prompt').innerHTML = correctHTML;
+
+  if (misses.length > 0) {
+    fbMissSection.style.display = 'block';
+    fbMissText.innerHTML = misses.join('<br>');
+  } else {
+    fbMissSection.style.display = 'none';
+  }
+
+  const isLast = currentEx === EXERCISES.length - 1;
+  fbNextBtn.textContent = isLast ? 'Ver resultados →' : 'Siguiente →';
+
+  overlay.classList.add('show');
+}
+
+function nextPrompt() {
+  document.getElementById('feedback-overlay').classList.remove('show');
+  const isLast = currentEx === EXERCISES.length - 1;
+  if (isLast) {
+    finishExercise();
+  } else {
+    loadExercise(currentEx + 1);
+  }
+}
+
+function finishExercise() {
+  const totalCorrect = scores.reduce((a, b) => a + b.correct, 0);
+  const totalPossible = scores.reduce((a, b) => a + b.total, 0);
+  const pct = Math.round((totalCorrect / totalPossible) * 100);
+  const mins = Math.round((Date.now() - startTime) / 60000);
+
+  document.getElementById('final-pct').textContent = pct + '%';
+  document.getElementById('final-correct').textContent = totalCorrect + '/' + totalPossible;
+  document.getElementById('final-time').textContent = mins || '<1';
+
+  let msg = pct >= 80 ? '¡Excelente trabajo! Dominas la anatomía de un prompt.' :
+            pct >= 60 ? 'Buen avance. Repasa los modificadores y el contexto.' :
+            'Sigue practicando. La clave está en distinguir acción de contexto.';
+  document.getElementById('final-msg').textContent = msg;
+
+  document.getElementById('prog-fill').style.width = '100%';
+  document.getElementById('prog-label').textContent = `${EXERCISES.length} / ${EXERCISES.length}`;
+
+  document.getElementById('exercise-screen').style.display = 'none';
+  document.getElementById('completion-screen').style.display = 'flex';
+  document.getElementById('completion-screen').style.flexDirection = 'column';
+  document.getElementById('completion-screen').style.alignItems = 'center';
+
+  saveResult(totalCorrect, totalPossible, pct, mins);
+}
+
+function saveResult(correct, total, pct, mins) {
+  try {
+    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    existing.push({
+      name: studentName,
+      correct, total, pct, mins,
+      scores: scores,
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+  } catch(e) {}
+
+  try {
+    const bc = new BroadcastChannel('prompt_tagger');
+    bc.postMessage({ type: 'result', name: studentName, correct, total, pct, mins, scores, timestamp: new Date().toISOString() });
+    bc.close();
+  } catch(e) {}
+}
+
+document.getElementById('name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startExercise();
+});
+</script>
+</body>
+</html>
