@@ -72,7 +72,11 @@
   .word.tagged-contexto { background: var(--green-50); color: var(--green-800); }
   .word.tagged-modificador { background: var(--amber-50); color: var(--amber-800); }
 
-  .hint-bar { background: var(--gray-50); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 1rem; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem; }
+  .hint-toggle { background: none; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 0.45rem 1rem; font-size: 12px; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 6px; margin-bottom: 0.75rem; transition: all 0.15s; }
+  .hint-toggle:hover { background: var(--gray-50); color: var(--text); border-color: var(--gray-400); }
+  .hint-toggle.active { background: var(--amber-50); border-color: var(--amber-200); color: var(--amber-800); }
+  .hint-bar { background: var(--amber-50); border: 1px solid var(--amber-200); border-radius: var(--radius); padding: 0.6rem 1rem; font-size: 12px; color: var(--amber-800); display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem; overflow: hidden; max-height: 0; opacity: 0; transition: max-height 0.3s ease, opacity 0.25s ease, padding 0.25s ease, margin 0.25s ease; padding-top: 0; padding-bottom: 0; margin-bottom: 0; }
+  .hint-bar.visible { max-height: 80px; opacity: 1; padding: 0.6rem 1rem; margin-bottom: 1.25rem; }
   .action-row { display: flex; gap: 10px; justify-content: flex-end; }
   .btn-secondary { padding: 0.65rem 1.25rem; background: transparent; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; color: var(--text); }
   .btn-secondary:hover { background: var(--gray-50); }
@@ -145,7 +149,7 @@
       <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
     </div>
     <h2>Ejercicio: Anatomía del Prompt</h2>
-    <p>Vas a leer 5 prompts reales y deberás identificar sus partes: Acción, Contexto y Modificadores.</p>
+    <p>Vas a leer 15 prompts reales y deberás identificar sus partes: Acción, Contexto y Modificadores.</p>
     <div class="name-input-wrap">
       <input class="name-input" id="name-input" type="text" placeholder="Tu nombre completo..." autocomplete="off"/>
       <button class="btn-primary" onclick="startExercise()">Comenzar →</button>
@@ -179,7 +183,10 @@
       <div class="prompt-text" id="prompt-display"></div>
     </div>
 
-    <div class="hint-bar">
+    <button class="hint-toggle" id="hint-toggle" onclick="toggleHint()">
+      💡 Mostrar pista
+    </button>
+    <div class="hint-bar" id="hint-bar">
       <span>💡</span><span id="hint-text"></span>
     </div>
 
@@ -260,6 +267,7 @@ window.saveResult = async function(result) {
 
 <script>
 const EXERCISES = [
+  // ── NIVEL BÁSICO (patrón familiar, para arrancar con confianza) ──
   {
     prompt: "Eres un chef experto en cocina mediterránea. Explícame paso a paso cómo preparar una paella. Soy principiante y nunca he cocinado arroz. La explicación es para adultos mayores sin experiencia. Preséntalo en 5 pasos numerados. Usa un tono amigable y sin tecnicismos.",
     tokens: [
@@ -270,7 +278,7 @@ const EXERCISES = [
       { text: " Preséntalo en 5 pasos numerados.", tag: "modificador" },
       { text: " Usa un tono amigable y sin tecnicismos.", tag: "modificador" }
     ],
-    hint: "Este prompt tiene un rol claro al inicio. ¿Quién 'es' la IA?"
+    hint: "Patrón clásico: rol → acción → contexto × 2 → modificador × 2. Úsalo como referencia para los que siguen."
   },
   {
     prompt: "Eres un médico paciente y empático. Explícame qué es la diabetes tipo 2 y cómo afecta al cuerpo. Me acaban de diagnosticar y estoy asustado, no tengo conocimientos médicos. La explicación es para una persona de 55 años. Dámela en 4 párrafos cortos. Usa un tono tranquilizador, sin términos médicos complejos.",
@@ -282,7 +290,7 @@ const EXERCISES = [
       { text: " Dámela en 4 párrafos cortos.", tag: "modificador" },
       { text: " Usa un tono tranquilizador, sin términos médicos complejos.", tag: "modificador" }
     ],
-    hint: "Hay dos partes de contexto distintas: una habla del rol de la IA y otra de tu situación personal."
+    hint: "Dos bloques de contexto: uno define el rol de la IA, el otro describe tu situación personal."
   },
   {
     prompt: "Eres un consultor de recursos humanos con experiencia. Ayúdame a redactar un correo para pedir un aumento de sueldo. Llevo 3 años en la empresa y nunca he pedido uno. Va dirigido a un gerente formal. Máximo 150 palabras con asunto incluido. Tono profesional pero cercano.",
@@ -294,7 +302,7 @@ const EXERCISES = [
       { text: " Máximo 150 palabras con asunto incluido.", tag: "modificador" },
       { text: " Tono profesional pero cercano.", tag: "modificador" }
     ],
-    hint: "La audiencia ('va dirigido a...') también es parte del contexto."
+    hint: "¿'Va dirigido a un gerente formal' es contexto o modificador? Piensa: ¿describe a quién, o cómo debe verse la respuesta?"
   },
   {
     prompt: "Eres un asesor financiero que explica conceptos de forma sencilla. Enséñame cómo empezar a ahorrar e invertir con poco dinero. Gano un salario básico y nunca he ahorrado de forma consciente. El consejo es para alguien de 30 años que empieza desde cero. Dame 5 pasos prácticos en lista numerada. Tono motivador y realista, sin jerga financiera.",
@@ -306,7 +314,7 @@ const EXERCISES = [
       { text: " Dame 5 pasos prácticos en lista numerada.", tag: "modificador" },
       { text: " Tono motivador y realista, sin jerga financiera.", tag: "modificador" }
     ],
-    hint: "Fíjate en el verbo principal: ¿qué le estás pidiendo hacer exactamente a la IA?"
+    hint: "El rol describe qué tipo de experto ES la IA. La situación describe quién ERES tú."
   },
   {
     prompt: "Eres un experto en ciberseguridad que sabe explicar temas técnicos a cualquier persona. Enséñame cómo proteger mis cuentas en internet de hackers. Soy una persona mayor que usa el celular para WhatsApp y banco, y me han intentado estafar. Dame 5 consejos prácticos con un ejemplo concreto en cada uno. Tono paciente, sin alarmar, como si me lo explicara un familiar.",
@@ -317,7 +325,132 @@ const EXERCISES = [
       { text: " Dame 5 consejos prácticos con un ejemplo concreto en cada uno.", tag: "modificador" },
       { text: " Tono paciente, sin alarmar, como si me lo explicara un familiar.", tag: "modificador" }
     ],
-    hint: "Este prompt no tiene audiencia separada. La persona que escribe y la audiencia son la misma."
+    hint: "Solo hay un bloque de contexto personal aquí. El rol y la audiencia son la misma persona."
+  },
+
+  // ── NIVEL INTERMEDIO (orden alterado, sin rol explícito, modificador entre contextos) ──
+  {
+    // Patrón: ACCIÓN → CONTEXTO → MODIFICADOR → CONTEXTO
+    // Trampa: el modificador aparece en el medio, no al final
+    prompt: "Recomiéndame tres destinos para un viaje en familia de 10 días. Somos una familia con dos hijos de 8 y 12 años con presupuesto limitado. Que cada destino tenga máximo 3 líneas de descripción. No hemos viajado nunca fuera del país y nos da miedo el idioma.",
+    tokens: [
+      { text: "Recomiéndame tres destinos para un viaje en familia de 10 días.", tag: "accion" },
+      { text: " Somos una familia con dos hijos de 8 y 12 años con presupuesto limitado.", tag: "contexto" },
+      { text: " Que cada destino tenga máximo 3 líneas de descripción.", tag: "modificador" },
+      { text: " No hemos viajado nunca fuera del país y nos da miedo el idioma.", tag: "contexto" }
+    ],
+    hint: "Ojo: el orden aquí no es el clásico. ¿Puede un modificador aparecer en la mitad del prompt?"
+  },
+  {
+    // Patrón: CONTEXTO → CONTEXTO → ACCIÓN → MODIFICADOR
+    // Trampa: no hay rol explícito; el contexto viene antes que la acción
+    prompt: "Tengo un hijo de 4 años que desde hace dos semanas tiene pesadillas todas las noches y no quiere dormir solo. Soy mamá primeriza y no sé si es normal o debo preocuparme. Explícame qué puede estar causando esto y cómo manejarlo. En lenguaje simple, sin diagnósticos médicos.",
+    tokens: [
+      { text: "Tengo un hijo de 4 años que desde hace dos semanas tiene pesadillas todas las noches y no quiere dormir solo.", tag: "contexto" },
+      { text: " Soy mamá primeriza y no sé si es normal o debo preocuparme.", tag: "contexto" },
+      { text: " Explícame qué puede estar causando esto y cómo manejarlo.", tag: "accion" },
+      { text: " En lenguaje simple, sin diagnósticos médicos.", tag: "modificador" }
+    ],
+    hint: "Este prompt no tiene rol. El contexto aparece primero, antes de la acción. ¿Dónde empieza realmente la instrucción?"
+  },
+  {
+    // Patrón: ACCIÓN → MODIFICADOR → CONTEXTO
+    // Trampa: solo 3 tokens; el modificador está en el medio; el contexto va al final
+    prompt: "Explícame qué opciones legales tengo si mi arrendador no me devuelve el depósito. En términos simples, sin lenguaje jurídico. Vivo en Colombia y el contrato venció hace 45 días.",
+    tokens: [
+      { text: "Explícame qué opciones legales tengo si mi arrendador no me devuelve el depósito.", tag: "accion" },
+      { text: " En términos simples, sin lenguaje jurídico.", tag: "modificador" },
+      { text: " Vivo en Colombia y el contrato venció hace 45 días.", tag: "contexto" }
+    ],
+    hint: "Solo 3 fragmentos. El modificador va antes del contexto. No asumas que el contexto siempre va al principio o al final."
+  },
+  {
+    // Patrón: CONTEXTO → ACCIÓN → MODIFICADOR → CONTEXTO → MODIFICADOR
+    // Trampa: modificador intercalado, contexto adicional al final
+    prompt: "Eres nutricionista deportiva especializada en mujeres. Diseñame un plan de alimentación para perder 5 kg en 2 meses. Preséntalo como una tabla semanal con desayuno, almuerzo y cena. Tengo intolerancia a la lactosa y entreno 3 veces por semana. Sin suplementos, solo comida real.",
+    tokens: [
+      { text: "Eres nutricionista deportiva especializada en mujeres.", tag: "contexto" },
+      { text: " Diseñame un plan de alimentación para perder 5 kg en 2 meses.", tag: "accion" },
+      { text: " Preséntalo como una tabla semanal con desayuno, almuerzo y cena.", tag: "modificador" },
+      { text: " Tengo intolerancia a la lactosa y entreno 3 veces por semana.", tag: "contexto" },
+      { text: " Sin suplementos, solo comida real.", tag: "modificador" }
+    ],
+    hint: "Los modificadores no tienen que estar juntos al final. Aquí hay uno en el medio y otro al final. ¿Puedes encontrar los dos?"
+  },
+
+  // ── NIVEL AVANZADO (dos acciones, modificador inicial, sin rol, estructuras ambiguas) ──
+  {
+    // Patrón: ACCIÓN → CONTEXTO → ACCIÓN → MODIFICADOR
+    // Trampa: dos acciones distintas en el mismo prompt
+    prompt: "Ayúdame a entender por qué mi pareja y yo peleamos siempre por lo mismo sin resolverlo. Llevamos 6 años juntos y el conflicto central es la distribución de tareas del hogar. Dame también 3 estrategias concretas para romper ese ciclo. Máximo 2 párrafos por estrategia.",
+    tokens: [
+      { text: "Ayúdame a entender por qué mi pareja y yo peleamos siempre por lo mismo sin resolverlo.", tag: "accion" },
+      { text: " Llevamos 6 años juntos y el conflicto central es la distribución de tareas del hogar.", tag: "contexto" },
+      { text: " Dame también 3 estrategias concretas para romper ese ciclo.", tag: "accion" },
+      { text: " Máximo 2 párrafos por estrategia.", tag: "modificador" }
+    ],
+    hint: "Hay dos verbos de acción distintos en este prompt. Un prompt puede pedirle dos cosas a la IA. ¿Puedes encontrar las dos acciones?"
+  },
+  {
+    // Patrón: MODIFICADOR → CONTEXTO → ACCIÓN
+    // Trampa: el modificador es lo primero que aparece
+    prompt: "En no más de 200 palabras y con un tono poético. Soy maestra de primaria y quiero leerles algo a mis estudiantes el último día de clases. Escríbeme un texto de despedida del año escolar dirigido a niños de 10 años.",
+    tokens: [
+      { text: "En no más de 200 palabras y con un tono poético.", tag: "modificador" },
+      { text: " Soy maestra de primaria y quiero leerles algo a mis estudiantes el último día de clases.", tag: "contexto" },
+      { text: " Escríbeme un texto de despedida del año escolar dirigido a niños de 10 años.", tag: "accion" }
+    ],
+    hint: "El primer fragmento no es ni acción ni contexto. ¿Puedes identificar qué es antes de leer el resto del prompt?"
+  },
+  {
+    // Patrón: CONTEXTO → ACCIÓN → CONTEXTO → ACCIÓN → MODIFICADOR
+    // Trampa: dos acciones separadas por un contexto intermedio
+    prompt: "Estoy lanzando una tienda online de ropa hecha a mano y no tengo presupuesto para publicidad. Analiza mis principales obstáculos para conseguir mis primeros 100 clientes. Tengo Instagram con 300 seguidores y vendo solo en Medellín por ahora. Propón también un plan de acción para los próximos 30 días. Todo en un tono directo y sin rodeos.",
+    tokens: [
+      { text: "Estoy lanzando una tienda online de ropa hecha a mano y no tengo presupuesto para publicidad.", tag: "contexto" },
+      { text: " Analiza mis principales obstáculos para conseguir mis primeros 100 clientes.", tag: "accion" },
+      { text: " Tengo Instagram con 300 seguidores y vendo solo en Medellín por ahora.", tag: "contexto" },
+      { text: " Propón también un plan de acción para los próximos 30 días.", tag: "accion" },
+      { text: " Todo en un tono directo y sin rodeos.", tag: "modificador" }
+    ],
+    hint: "Este prompt tiene dos acciones separadas por un bloque de contexto en el medio. Lee despacio y busca los dos verbos principales."
+  },
+  {
+    // Patrón: ACCIÓN → MODIFICADOR → MODIFICADOR → CONTEXTO
+    // Trampa: dos modificadores seguidos antes de que aparezca el contexto
+    prompt: "Escríbeme el guion de un video corto para redes sociales sobre el cambio climático. Máximo 60 segundos de duración, formato de pregunta y respuesta. Tono urgente pero esperanzador, sin catastrofismo. El video va dirigido a jóvenes de 15 a 25 años que usan TikTok.",
+    tokens: [
+      { text: "Escríbeme el guion de un video corto para redes sociales sobre el cambio climático.", tag: "accion" },
+      { text: " Máximo 60 segundos de duración, formato de pregunta y respuesta.", tag: "modificador" },
+      { text: " Tono urgente pero esperanzador, sin catastrofismo.", tag: "modificador" },
+      { text: " El video va dirigido a jóvenes de 15 a 25 años que usan TikTok.", tag: "contexto" }
+    ],
+    hint: "El contexto aparece al final, después de dos modificadores seguidos. ¿La audiencia es contexto o modificador?"
+  },
+  {
+    // Patrón: CONTEXTO → MODIFICADOR → ACCIÓN → MODIFICADOR
+    // Trampa: modificador antes de la acción + contexto al inicio sin rol
+    prompt: "Me han citado a una entrevista de trabajo para un cargo de coordinadora de proyectos en una ONG y estoy muy nerviosa. Quiero respuestas cortas, máximo 2 oraciones cada una. Prepárame para las 5 preguntas más difíciles que me pueden hacer. Que el tono sea seguro y auténtico, no corporativo.",
+    tokens: [
+      { text: "Me han citado a una entrevista de trabajo para un cargo de coordinadora de proyectos en una ONG y estoy muy nerviosa.", tag: "contexto" },
+      { text: " Quiero respuestas cortas, máximo 2 oraciones cada una.", tag: "modificador" },
+      { text: " Prepárame para las 5 preguntas más difíciles que me pueden hacer.", tag: "accion" },
+      { text: " Que el tono sea seguro y auténtico, no corporativo.", tag: "modificador" }
+    ],
+    hint: "El modificador aparece antes de la acción. No busques la acción solo al inicio: puede estar en cualquier posición."
+  },
+  {
+    // Patrón: ACCIÓN → CONTEXTO → MODIFICADOR → ACCIÓN → CONTEXTO
+    // Trampa: la segunda acción va seguida de contexto al final; sin rol en todo el prompt
+    prompt: "Explícame qué es el duelo y por qué se siente tan diferente en cada persona. Mi mamá murió hace tres semanas y no entiendo por qué a veces estoy bien y de repente me derrumbo. Respóndeme en un tono cálido, como si fuera una conversación. Dime también qué cosas pequeñas puedo hacer hoy para cuidarme. No tengo energía para leer textos largos.",
+    tokens: [
+      { text: "Explícame qué es el duelo y por qué se siente tan diferente en cada persona.", tag: "accion" },
+      { text: " Mi mamá murió hace tres semanas y no entiendo por qué a veces estoy bien y de repente me derrumbo.", tag: "contexto" },
+      { text: " Respóndeme en un tono cálido, como si fuera una conversación.", tag: "modificador" },
+      { text: " Dime también qué cosas pequeñas puedo hacer hoy para cuidarme.", tag: "accion" },
+      { text: " No tengo energía para leer textos largos.", tag: "contexto" }
+    ],
+    hint: "El prompt más difícil del set: sin rol, dos acciones, y el último fragmento parece un modificador pero en realidad describe una limitación de la persona. ¿Es contexto o modificador?"
   }
 ];
 
@@ -338,6 +471,12 @@ window.startExercise = startExercise;
 function loadExercise(idx) {
   currentEx = idx; activeTag = null; tagMap = {};
   document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active-tag'));
+  // Reset hint to hidden on each new exercise
+  const hintBar = document.getElementById('hint-bar');
+  const hintToggle = document.getElementById('hint-toggle');
+  hintBar.classList.remove('visible');
+  hintToggle.classList.remove('active');
+  hintToggle.textContent = '💡 Mostrar pista';
   const ex = EXERCISES[idx];
   document.getElementById('ex-num').textContent = `Prompt ${idx + 1} de ${EXERCISES.length}`;
   document.getElementById('prog-fill').style.width = `${(idx / EXERCISES.length) * 100}%`;
@@ -353,6 +492,15 @@ function loadExercise(idx) {
     display.appendChild(span);
   });
 }
+
+function toggleHint() {
+  const bar = document.getElementById('hint-bar');
+  const btn = document.getElementById('hint-toggle');
+  const visible = bar.classList.toggle('visible');
+  btn.classList.toggle('active', visible);
+  btn.textContent = visible ? '💡 Ocultar pista' : '💡 Mostrar pista';
+}
+window.toggleHint = toggleHint;
 
 function selectTag(tag, btn) {
   activeTag = tag;
