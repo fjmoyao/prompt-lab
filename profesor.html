@@ -167,11 +167,16 @@
   </div>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+<!-- ============================================================
+  FIREBASE via compat SDK (NOT module) — avoids all scope issues
+  compat scripts register on window.firebase automatically
+============================================================= -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
-const app = initializeApp({
+<script>
+// ── Firebase init ──
+firebase.initializeApp({
   apiKey: "AIzaSyCiSpZk638M1KzopsngP_IS0yhlrlE6RXQ",
   authDomain: "prompt-lab-538ea.firebaseapp.com",
   databaseURL: "https://prompt-lab-538ea-default-rtdb.firebaseio.com",
@@ -180,10 +185,10 @@ const app = initializeApp({
   messagingSenderId: "186674662929",
   appId: "1:186674662929:web:546c7b4868fd1e4973abb0"
 });
-const db = getDatabase(app);
+var db = firebase.database();
 
-// Tag distribution per prompt (tokens per exercise)
-const EX_TAGS = [
+// ── Constants ──
+var EX_TAGS = [
   ['contexto','accion','contexto','contexto','modificador','modificador'],
   ['contexto','accion','contexto','contexto','modificador','modificador'],
   ['contexto','accion','contexto','contexto','modificador','modificador'],
@@ -193,22 +198,19 @@ const EX_TAGS = [
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// ── Render ──
 function render(data) {
-  const n = data.length;
+  var n = data.length;
   document.getElementById('s-n').textContent = n;
   document.getElementById('last-update').textContent = 'Última actualización: ' + new Date().toLocaleTimeString('es');
 
-  if (n === 0) {
-    resetUI();
-    return;
-  }
+  if (n === 0) { resetUI(); return; }
 
-  // Stats
-  const avg = Math.round(data.reduce((a,b) => a + b.pct, 0) / n);
-  const top = data.reduce((a,b) => a.pct > b.pct ? a : b);
-  const low = data.filter(d => d.pct < 60).length;
-  const times = data.map(d => d.mins).filter(m => m > 0);
-  const avgTime = times.length ? Math.round(times.reduce((a,b)=>a+b,0)/times.length) : '—';
+  var avg = Math.round(data.reduce(function(a,b){return a+b.pct},0) / n);
+  var top = data.reduce(function(a,b){return a.pct > b.pct ? a : b});
+  var low = data.filter(function(d){return d.pct < 60}).length;
+  var times = data.map(function(d){return d.mins}).filter(function(m){return m > 0});
+  var avgTime = times.length ? Math.round(times.reduce(function(a,b){return a+b},0)/times.length) : '—';
 
   document.getElementById('s-avg').textContent = avg + '%';
   document.getElementById('s-top').textContent = top.pct + '%';
@@ -216,137 +218,123 @@ function render(data) {
   document.getElementById('s-low').textContent = low;
   document.getElementById('s-time').textContent = avgTime;
 
-  // Distribution
-  const buckets = [0,0,0,0];
-  data.forEach(d => {
+  var buckets = [0,0,0,0];
+  data.forEach(function(d) {
     if (d.pct >= 90) buckets[0]++;
     else if (d.pct >= 70) buckets[1]++;
     else if (d.pct >= 50) buckets[2]++;
     else buckets[3]++;
   });
-  [['b90','c90',buckets[0]],['b70','c70',buckets[1]],['b50','c50',buckets[2]],['b0','c0',buckets[3]]].forEach(([bid,cid,count]) => {
-    document.getElementById(bid).style.width = (n > 0 ? (count/n)*100 : 0) + '%';
-    document.getElementById(cid).textContent = count;
+  [['b90','c90',buckets[0]],['b70','c70',buckets[1]],['b50','c50',buckets[2]],['b0','c0',buckets[3]]].forEach(function(x) {
+    document.getElementById(x[0]).style.width = (n > 0 ? (x[2]/n)*100 : 0) + '%';
+    document.getElementById(x[1]).textContent = x[2];
   });
 
-  // Tag accuracy — count correct per tag type
-  const tagStats = { accion:{c:0,t:0}, contexto:{c:0,t:0}, modificador:{c:0,t:0} };
-  const promptStats = EX_TAGS.map(() => ({c:0,t:0}));
+  var tagCorrect = { accion:0, contexto:0, modificador:0 };
+  var tagTotal   = { accion:0, contexto:0, modificador:0 };
+  var promptStats = EX_TAGS.map(function(){return {c:0,t:0}});
 
-  data.forEach(student => {
-    (student.scores || []).forEach(sc => {
-      const tags = EX_TAGS[sc.exIdx];
+  data.forEach(function(student) {
+    (student.scores || []).forEach(function(sc) {
+      var tags = EX_TAGS[sc.exIdx];
       if (!tags) return;
       promptStats[sc.exIdx].t += sc.total;
       promptStats[sc.exIdx].c += sc.correct;
-      // Approximate tag-level accuracy from total correct assuming uniform distribution
-      // (we don't store per-token results, only per-exercise totals)
-      tags.forEach(tag => { tagStats[tag].t++; });
-    });
-  });
-
-  // Use per-exercise accuracy as proxy for tag accuracy per type
-  const tagCorrect = { accion:0, contexto:0, modificador:0 };
-  const tagTotal   = { accion:0, contexto:0, modificador:0 };
-  data.forEach(student => {
-    (student.scores || []).forEach(sc => {
-      const tags = EX_TAGS[sc.exIdx];
-      if (!tags) return;
-      const exPct = sc.pct / 100;
-      tags.forEach(tag => {
+      var exPct = sc.pct / 100;
+      tags.forEach(function(tag) {
         tagTotal[tag]++;
         tagCorrect[tag] += exPct;
       });
     });
   });
 
-  ['accion','contexto','modificador'].forEach(tag => {
-    const pct = tagTotal[tag] > 0 ? Math.round((tagCorrect[tag] / tagTotal[tag]) * 100) : 0;
-    document.getElementById(`ta-${tag}`).style.width = pct + '%';
-    document.getElementById(`tp-${tag}`).textContent = tagTotal[tag] > 0 ? pct + '%' : '—';
+  ['accion','contexto','modificador'].forEach(function(tag) {
+    var pct = tagTotal[tag] > 0 ? Math.round((tagCorrect[tag] / tagTotal[tag]) * 100) : 0;
+    document.getElementById('ta-' + tag).style.width = pct + '%';
+    document.getElementById('tp-' + tag).textContent = tagTotal[tag] > 0 ? pct + '%' : '—';
   });
 
-  // Per-prompt accuracy
-  promptStats.forEach((ps, i) => {
-    const pct = ps.t > 0 ? Math.round((ps.c / ps.t) * 100) : 0;
-    document.getElementById(`pp${i+1}`).style.width = (ps.t > 0 ? pct : 0) + '%';
-    document.getElementById(`pv${i+1}`).textContent = ps.t > 0 ? pct + '%' : '—';
+  promptStats.forEach(function(ps, i) {
+    var pct = ps.t > 0 ? Math.round((ps.c / ps.t) * 100) : 0;
+    document.getElementById('pp' + (i+1)).style.width = (ps.t > 0 ? pct : 0) + '%';
+    document.getElementById('pv' + (i+1)).textContent = ps.t > 0 ? pct + '%' : '—';
   });
 
-  // Table
   document.getElementById('empty-msg').style.display = 'none';
   document.getElementById('table-wrap').style.display = 'block';
 
-  const sorted = [...data].sort((a,b) => b.pct - a.pct);
-  document.getElementById('tbody').innerHTML = sorted.map((s, i) => {
-    const cls = s.pct >= 80 ? 'high' : s.pct >= 60 ? 'mid' : 'low';
-    const dots = (s.scores || []).map(sc => {
-      const p = sc.pct;
-      const dcls = p >= 80 ? 'ok' : p >= 50 ? 'partial' : 'fail';
-      return `<div class="dot ${dcls}" title="Prompt ${sc.exIdx+1}: ${p}%"></div>`;
+  var sorted = data.slice().sort(function(a,b){return b.pct - a.pct});
+  document.getElementById('tbody').innerHTML = sorted.map(function(s, i) {
+    var cls = s.pct >= 80 ? 'high' : s.pct >= 60 ? 'mid' : 'low';
+    var dots = (s.scores || []).map(function(sc) {
+      var p = sc.pct;
+      var dcls = p >= 80 ? 'ok' : p >= 50 ? 'partial' : 'fail';
+      return '<div class="dot ' + dcls + '" title="Prompt ' + (sc.exIdx+1) + ': ' + p + '%"></div>';
     }).join('');
-    return `<tr>
-      <td style="color:var(--muted);font-size:12px">${i+1}</td>
-      <td style="font-weight:500">${esc(s.name)}</td>
-      <td><span class="badge ${cls}">${s.pct}%</span></td>
-      <td style="color:var(--muted)">${s.correct}/${s.total}</td>
-      <td style="color:var(--muted)">${s.mins || '—'} min</td>
-      <td><div class="dots">${dots}</div></td>
-    </tr>`;
+    return '<tr>' +
+      '<td style="color:var(--muted);font-size:12px">' + (i+1) + '</td>' +
+      '<td style="font-weight:500">' + esc(s.name) + '</td>' +
+      '<td><span class="badge ' + cls + '">' + s.pct + '%</span></td>' +
+      '<td style="color:var(--muted)">' + s.correct + '/' + s.total + '</td>' +
+      '<td style="color:var(--muted)">' + (s.mins || '—') + ' min</td>' +
+      '<td><div class="dots">' + dots + '</div></td>' +
+    '</tr>';
   }).join('');
 }
 
 function resetUI() {
+  document.getElementById('s-n').textContent = '0';
   document.getElementById('s-avg').textContent = '—';
   document.getElementById('s-top').textContent = '—';
   document.getElementById('s-top-name').textContent = '—';
   document.getElementById('s-low').textContent = '0';
   document.getElementById('s-time').textContent = '—';
-  ['b90','b70','b50','b0'].forEach(id => document.getElementById(id).style.width = '0%');
-  ['c90','c70','c50','c0'].forEach(id => document.getElementById(id).textContent = '0');
-  ['accion','contexto','modificador'].forEach(t => {
-    document.getElementById(`ta-${t}`).style.width = '0%';
-    document.getElementById(`tp-${t}`).textContent = '—';
+  ['b90','b70','b50','b0'].forEach(function(id){document.getElementById(id).style.width='0%'});
+  ['c90','c70','c50','c0'].forEach(function(id){document.getElementById(id).textContent='0'});
+  ['accion','contexto','modificador'].forEach(function(t){
+    document.getElementById('ta-'+t).style.width='0%';
+    document.getElementById('tp-'+t).textContent='—';
   });
-  [1,2,3,4,5].forEach(i => {
-    document.getElementById(`pp${i}`).style.width = '0%';
-    document.getElementById(`pv${i}`).textContent = '—';
+  [1,2,3,4,5].forEach(function(i){
+    document.getElementById('pp'+i).style.width='0%';
+    document.getElementById('pv'+i).textContent='—';
   });
   document.getElementById('empty-msg').style.display = 'block';
   document.getElementById('table-wrap').style.display = 'none';
 }
 
-// Live listener
-const resultsRef = ref(db, 'resultados');
-onValue(resultsRef, snapshot => {
-  const raw = snapshot.val() || {};
-  // Deduplicate by name (keep latest)
-  const byName = {};
-  Object.values(raw).forEach(r => {
+// ── Live listener ──
+db.ref('resultados').on('value', function(snapshot) {
+  var raw = snapshot.val() || {};
+  var byName = {};
+  Object.values(raw).forEach(function(r) {
     if (!byName[r.name] || r.timestamp > byName[r.name].timestamp) byName[r.name] = r;
   });
   render(Object.values(byName));
-}, err => {
+}, function(err) {
   document.getElementById('last-update').textContent = '⚠ Error de conexión: ' + err.message;
 });
 
-async function resetSession() {
+// ── Reset button — direct, no module scope issues ──
+document.getElementById('btn-reset').addEventListener('click', function() {
   if (!confirm('¿Borrar todos los resultados de esta sesión en Firebase?')) return;
-  const btn = document.getElementById('btn-reset');
+  var btn = document.getElementById('btn-reset');
   btn.textContent = 'Borrando...';
   btn.disabled = true;
-  try {
-    await remove(ref(db, 'resultados'));
-    resetUI();
-  } catch(e) {
-    alert('Error al borrar: ' + e.message);
-  } finally {
-    btn.textContent = 'Reiniciar sesión';
-    btn.disabled = false;
-  }
-}
+  db.ref('resultados').remove()
+    .then(function() {
+      resetUI();
+      btn.textContent = '✓ Sesión reiniciada';
+      setTimeout(function(){ btn.textContent = 'Reiniciar sesión'; btn.disabled = false; }, 2000);
+    })
+    .catch(function(e) {
+      alert('Error al borrar: ' + e.message);
+      btn.textContent = 'Reiniciar sesión';
+      btn.disabled = false;
+    });
+});
 
-document.getElementById('btn-reset').addEventListener('click', resetSession);
+console.log('Profesor dashboard loaded OK — Firebase compat SDK');
 </script>
 </body>
 </html>
