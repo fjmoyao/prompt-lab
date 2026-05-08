@@ -104,7 +104,7 @@
   </div>
   <div style="display:flex;align-items:center;gap:0.5rem">
     <span class="live-badge"><span class="live-dot"></span>En vivo</span>
-    <button class="btn-reset" onclick="resetSession()">Reiniciar sesión</button>
+    <button class="btn-reset" id="btn-reset">Reiniciar sesión</button>
   </div>
 </div>
 
@@ -330,16 +330,23 @@ onValue(resultsRef, snapshot => {
   document.getElementById('last-update').textContent = '⚠ Error de conexión: ' + err.message;
 });
 
-window.resetSession = async function() {
+async function resetSession() {
   if (!confirm('¿Borrar todos los resultados de esta sesión en Firebase?')) return;
+  const btn = document.getElementById('btn-reset');
+  btn.textContent = 'Borrando...';
+  btn.disabled = true;
   try {
     await remove(ref(db, 'resultados'));
-    document.getElementById('s-n').textContent = '0';
     resetUI();
   } catch(e) {
     alert('Error al borrar: ' + e.message);
+  } finally {
+    btn.textContent = 'Reiniciar sesión';
+    btn.disabled = false;
   }
-};
+}
+
+document.getElementById('btn-reset').addEventListener('click', resetSession);
 </script>
 </body>
 </html>
