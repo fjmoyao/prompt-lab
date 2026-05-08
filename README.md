@@ -1,4 +1,4 @@
-# 🏷️ Prompt Lab
+# 🏷️ Anatomía del Prompt
 
 Herramienta interactiva para que estudiantes identifiquen y etiqueten las partes de un prompt de inteligencia artificial. Diseñada para clases presenciales con hasta 40 estudiantes simultáneos.
 
@@ -18,7 +18,7 @@ Los datos se sincronizan entre estudiantes y tablero usando `localStorage` + `Br
 ## Estructura del repositorio
 
 ```
-anatomia-del-prompt/
+prompt-lab/
 ├── estudiante.html     # App del estudiante
 ├── profesor.html       # Tablero del profesor
 └── README.md           # Este archivo
@@ -26,13 +26,25 @@ anatomia-del-prompt/
 
 ---
 
-## Cómo hacer el deploy (GitHub Pages)
+## 🚀 Links en vivo
+
+El proyecto ya está publicado en GitHub Pages:
+
+| Archivo | URL |
+|---|---|
+| 👩‍🎓 Estudiantes | https://fjmoyao.github.io/prompt-lab/estudiante.html |
+| 👨‍🏫 Profesor | https://fjmoyao.github.io/prompt-lab/profesor.html |
+| 📁 Repositorio | https://github.com/fjmoyao/prompt-lab |
+
+---
+
+## Cómo hacer el deploy (referencia para futuros cambios)
 
 ### Paso 1 — Crear el repositorio
 
 1. Ve a [github.com](https://github.com) e inicia sesión
 2. Haz clic en **New repository**
-3. Nombre sugerido: `anatomia-del-prompt`
+3. Nombre del repositorio: `prompt-lab`
 4. Márcalo como **Public** (requerido para GitHub Pages gratis)
 5. Haz clic en **Create repository**
 
@@ -45,8 +57,8 @@ anatomia-del-prompt/
 
 **Opción B — Con Git (si tienes Git instalado):**
 ```bash
-git clone https://github.com/TU_USUARIO/anatomia-del-prompt.git
-cd anatomia-del-prompt
+git clone https://github.com/fjmoyao/prompt-lab.git
+cd prompt-lab
 # copia los tres archivos aquí
 git add .
 git commit -m "primera versión"
@@ -63,15 +75,15 @@ git push origin main
 6. Espera 1–2 minutos y tu sitio estará en:
 
 ```
-https://TU_USUARIO.github.io/anatomia-del-prompt/
+https://fjmoyao.github.io/prompt-lab/
 ```
 
 ### Paso 4 — Obtener los links finales
 
 | Archivo | URL |
 |---|---|
-| Estudiantes | `https://TU_USUARIO.github.io/anatomia-del-prompt/estudiante.html` |
-| Profesor | `https://TU_USUARIO.github.io/anatomia-del-prompt/profesor.html` |
+| Estudiantes | `https://fjmoyao.github.io/prompt-lab/estudiante.html` |
+| Profesor | `https://fjmoyao.github.io/prompt-lab/profesor.html` |
 
 ---
 
