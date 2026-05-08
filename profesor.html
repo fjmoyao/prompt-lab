@@ -144,6 +144,16 @@
         <div class="pr-row"><span class="pr-label">Prompt 3</span><div class="pr-track"><div class="pr-fill" id="pp3" style="width:0%"></div></div><span class="pr-pct" id="pv3">—</span></div>
         <div class="pr-row"><span class="pr-label">Prompt 4</span><div class="pr-track"><div class="pr-fill" id="pp4" style="width:0%"></div></div><span class="pr-pct" id="pv4">—</span></div>
         <div class="pr-row"><span class="pr-label">Prompt 5</span><div class="pr-track"><div class="pr-fill" id="pp5" style="width:0%"></div></div><span class="pr-pct" id="pv5">—</span></div>
+        <div class="pr-row"><span class="pr-label">Prompt 6</span><div class="pr-track"><div class="pr-fill" id="pp6" style="width:0%"></div></div><span class="pr-pct" id="pv6">—</span></div>
+        <div class="pr-row"><span class="pr-label">Prompt 7</span><div class="pr-track"><div class="pr-fill" id="pp7" style="width:0%"></div></div><span class="pr-pct" id="pv7">—</span></div>
+        <div class="pr-row"><span class="pr-label">Prompt 8</span><div class="pr-track"><div class="pr-fill" id="pp8" style="width:0%"></div></div><span class="pr-pct" id="pv8">—</span></div>
+        <div class="pr-row"><span class="pr-label">Prompt 9</span><div class="pr-track"><div class="pr-fill" id="pp9" style="width:0%"></div></div><span class="pr-pct" id="pv9">—</span></div>
+        <div class="pr-row"><span class="pr-label">Prompt 10</span><div class="pr-track"><div class="pr-fill" id="pp10" style="width:0%"></div></div><span class="pr-pct" id="pv10">—</span></div>
+        <div class="pr-row"><span class="pr-label">Prompt 11</span><div class="pr-track"><div class="pr-fill" id="pp11" style="width:0%"></div></div><span class="pr-pct" id="pv11">—</span></div>
+        <div class="pr-row"><span class="pr-label">Prompt 12</span><div class="pr-track"><div class="pr-fill" id="pp12" style="width:0%"></div></div><span class="pr-pct" id="pv12">—</span></div>
+        <div class="pr-row"><span class="pr-label">Prompt 13</span><div class="pr-track"><div class="pr-fill" id="pp13" style="width:0%"></div></div><span class="pr-pct" id="pv13">—</span></div>
+        <div class="pr-row"><span class="pr-label">Prompt 14</span><div class="pr-track"><div class="pr-fill" id="pp14" style="width:0%"></div></div><span class="pr-pct" id="pv14">—</span></div>
+        <div class="pr-row"><span class="pr-label">Prompt 15</span><div class="pr-track"><div class="pr-fill" id="pp15" style="width:0%"></div></div><span class="pr-pct" id="pv15">—</span></div>
       </div>
     </div>
   </div>
@@ -193,7 +203,17 @@ var EX_TAGS = [
   ['contexto','accion','contexto','contexto','modificador','modificador'],
   ['contexto','accion','contexto','contexto','modificador','modificador'],
   ['contexto','accion','contexto','contexto','modificador','modificador'],
-  ['contexto','accion','contexto','modificador','modificador']
+  ['contexto','accion','contexto','modificador','modificador'],
+  ['accion','contexto','modificador','contexto'],
+  ['contexto','contexto','accion','modificador'],
+  ['accion','modificador','contexto'],
+  ['contexto','accion','modificador','contexto','modificador'],
+  ['accion','contexto','accion','modificador'],
+  ['modificador','contexto','accion'],
+  ['contexto','accion','contexto','accion','modificador'],
+  ['accion','modificador','modificador','contexto'],
+  ['contexto','modificador','accion','modificador'],
+  ['accion','contexto','modificador','accion','contexto']
 ];
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -295,7 +315,7 @@ function resetUI() {
     document.getElementById('ta-'+t).style.width='0%';
     document.getElementById('tp-'+t).textContent='—';
   });
-  [1,2,3,4,5].forEach(function(i){
+  [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].forEach(function(i){
     document.getElementById('pp'+i).style.width='0%';
     document.getElementById('pv'+i).textContent='—';
   });
