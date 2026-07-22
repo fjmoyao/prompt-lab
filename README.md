@@ -3,7 +3,7 @@
 Herramienta interactiva para que estudiantes identifiquen y etiqueten las partes de un prompt de inteligencia artificial. Diseñada para clases presenciales con hasta 40 estudiantes simultáneos.
 
 ---
-
+-
 ## ¿Qué es esto?
 
 Un par de archivos HTML que no requieren instalación ni servidor backend:
